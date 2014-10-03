@@ -1,0 +1,19 @@
+Package: ASGSCA
+Type: Package
+Title: Association Studies for multiple SNPs and multiple traits using
+        Generalized Structured Equation Models
+Version: 0.99.2
+Date: 2014-07-30
+Author: Hela Romdhani, Stepan Grinek , Heungsun Hwang and Aurelie
+        Labbe.
+Maintainer: Hela Romdhani <hela.romdhani@mcgill.ca>
+Description: The package provides tools to model and test the
+        association between multiple genotypes and multiple traits,
+        taking into account the prior biological knowledge. Genes, and
+        clinical pathways are incorporated in the model as latent
+        variables. The method is based on Generalized Structured
+        Component Analysis (GSCA).
+License: GPL-3
+Imports: Matrix, MASS
+biocViews: StructuralEquationModels
+Suggests: BiocStyle

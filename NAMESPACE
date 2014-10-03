@@ -1,0 +1,2 @@
+export(GSCA, GSCAestim)
+import(Matrix, MASS)

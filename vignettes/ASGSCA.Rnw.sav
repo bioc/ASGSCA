@@ -1,0 +1,397 @@
+\documentclass{article}
+% \VignettePackage{ASGSCA}
+% \VignetteIndexEntry{Association Studies using Generalized Structured Equation Models.}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage[colorlinks=true,urlcolor=blue]{hyperref}
+\usepackage{array}
+\usepackage{color}
+\usepackage{underscore}
+
+\usepackage[authoryear,round]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{verbatim}
+\usepackage{multirow}
+%\usepackage[utf8]{inputenc} % for UTF-8/single quotes from sQuote()
+\usepackage{Sweave}%
+% for bold symbols in mathmode
+\usepackage{bm}
+\usepackage{setspace}
+\doublespacing
+
+%\newcommand{\RR}{\textbf{R}}
+%\newcommand{\pkg}[1]{\textbf{#1}}
+%\newcommand{\Rfun}[1]{\textit{#1}}
+%
+%\newcommand{\beq}{\begin{equation}}
+%\newcommand{\eeq}{\end{equation}}
+%\newcommand{\m}[1]{\mathbf{#1}}
+%
+%\newcommand{\code}[1]{{{\tt #1}}}
+\title{Using ASGSCA}
+\author{Hela Romdhani, Stepan Grinek, Heungsun Hwang and Aurelie Labbe}
+
+\date{\today}
+\sloppy
+\hyphenpenalty 10000
+
+\begin{document}
+%\SweaveOpts{engine=R,eps=FALSE,pdf=TRUE,width=7,height=4,strip.white=true,keep.source=TRUE}
+%\SweaveOpts{prefix.string = base, echo=TRUE, eval=TRUE, fig = FALSE, eps = FALSE, pdf = TRUE}
+
+\maketitle
+
+
+%% Note: These are explained in '?RweaveLatex' :
+%<<preliminaries, echo=FALSE>>=
+%options(width=75)
+%@
+
+\section{Introduction}
+
+The \textbf{ASGSCA} (Association Study using GSCA) package provides tools to model and test the associations between multiple genotypes and multiple traits, taking into account prior biological knowledge.
+ Functional genomic regions, e.g., genes and clinical pathways, are incorporated in the model as latent variables that are not directly observed.  See \citet{Romdhani2014} for details. 
+ The method is based on Generalized Structured Component Analysis (GSCA) \citep{Hwang2004}. GSCA is an approach to structural equation models (SEM) and thus
+  constitutes two sub-models: measurement and structural models. The former specifies the relationships between observed variables (here genotypes and traits) and latent variables
+(here genes or more generally genomic regions and clinical pathways), whereas the structural model expresses the relationships between latent variables.
+
+Assume we have data on $J$ candidate SNPs $(X_1,\cdots,X_J)$ and $K$ traits $(X_{J+1},$ $\cdots,X_{J+K})$. Let $I=J+K$ denote the total number of observed variables. 
+Suppose that the $J$ SNPs are mapped to $G$ different genes or regions $(\gamma_1,\cdots,\gamma_G)$ and the $K$ traits are involved in $T$ different clinical pathways  $(\gamma_{G+1},\cdots,\gamma_{G+T})$.
+ The measurement model is given by
+\begin{eqnarray}\label{measurment}
+\gamma_{\ell}=\sum\limits_{i\in S_{\ell}}w_{i{\ell}}X_i, \;\; \ell=1,\cdots,L
+\end{eqnarray}
+where $S_{\ell}$ denotes the set of indices of the observed variables mapped to the $\ell^{th}$ latent structure, $w_{i\ell}$ denotes the weight associated with the observed variable $X_i$ in the definition of the latent variable $\ell$ and $L=G+T$ is the total number of latent variables in the model. Let $W$ denotes the $I \times L$ matrix of weights.
+The structural model is given by
+\begin{equation}\label{structural}
+\gamma_{\ell}=\sum\limits_{\ell'=1,\ell' \neq \ell}^{L} b_{\ell' \ell}\gamma_{\ell'}+\epsilon_{\ell}, \;\; \ell=1,\cdots,L
+\end{equation}
+where $\epsilon_{\ell}$ represents the error term and $b_{\ell' \ell}$ represents the path coefficient linking $\gamma_{\ell'}$ to $\gamma_{\ell}$.
+ Let $B$ denote the $L \times L$ matrix of path coefficients.
+
+Figure \ref{exp} shows an example with four SNPs mapped to two different genes and  four traits involved in two clinical pathways. Gene 1 is only associated with clinical pathway 1 while gene 2 is related to both clinical pathways. One of the traits is involved in both clinical pathways.
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=8cm,height=7cm]{exp.jpg}
+\caption{Example with 4 SNPs, 2 genes, 4 traits and 2 clinical pathways.} \label{exp}
+\end{figure}
+
+
+The \textbf{ASGSCA} package consists of one main function \textbf{GSCA} which allows one to estimate the model parameters and/or run tests for the null hypothesis $H_{0}^{\ell',\ell}:b_{\ell'\ell}=0$ of no effect of  gene $\gamma_{\ell'}$ on clinical pathway $\gamma_{\ell}$. Indeed,  $b_{\ell'\ell}$ quantifies the joint effect of the genotypes mapped to gene $\gamma_{\ell'}$ on the traits involved in clinical pathway $\gamma_{\ell}$ together.
+
+\section{Package use}
+
+First, the function \textbf{GSCA} can be used to estimate the weight and path coefficients by minimizing a global least square criterion using an Alternating Least-Squares (ALS)
+ algorithm \citep{deLeeuw1976, Hwang2004}. This algorithm alternates between two main steps until convergence: 1) the weight coefficients $w_{i{\ell}}$, $i=1,\cdots,I,\; \ell=1,\cdots,L$
+  are fixed, and the path coefficients $b_{\ell' \ell}$, $\ell,\ell'=1,\cdots,L$, $\ell\neq \ell'$ are updated in the least-squares sense; 
+  2) the weights $w_{i{\ell}}$ are updated in the least-squares sense for fixed path coefficients $b_{\ell' \ell}$.
+  Note here  that if one runs the function \textbf{GSCA} twice for the same dataset, signs of the parameters estimates may change. Nevertheless, the meaning of the estimate remains the same.
+   For example, for the same dataset, a first estimation could result in a positive path coefficient estimate between two latent variables as well as all positive weight
+   estimates for the two latent variables, while a second run of the function could produce a negative path coefficient estimate between the same
+    latent variables because it yields negative weight estimates for one latent variable whereas positive weight estimates for the other latent variable. 
+
+The function \textbf{GSCA} also allows one to test for the association between genes (multiple genotypes) and clinical pathways (multiple traits). 
+It performs permutation test procedures for the significance of the path coefficients relating two latent variables. The user has the option to specify a subset of path coefficients to be tested, otherwise the test is performed on all the gene-clinical pathway connections in the model.
+
+ The dataset should be given in a data frame object. To run the \textbf{GSCA} function, one should also provide two matrices $W0$ and $B0$ that indicate connections between the different components of the model. Concretely, $W0$ is an $I \times L$ matrix (the rows correspond to the genotypes and traits and the columns to genes and clinical pathways) with 0's and 1's, where a value of 1 indicates an arrow from the observed variable in the row to the latent variable in the column. Similarly, $B0$ is an $L \times L$ matrix with 0's and 1's, where a value of 1 indicates an arrow from the latent variable in the row to the latent variable in the column.
+
+ 
+ 
+A dataset contaning some variables of interest from the Quebec Child and Adolescent Health and Social Survey (QCAHS), observed on $1707$ French Canadian participants (860 boys and 847 girls), is included in the package. Detailed descriptions of the QCAHS design and methods can be found in \citet{Paradis2003}.
+The dataset contains z-score transformation (standardized for age and sex) of 8 traits  grouped into three clinical pathways: lipid metabolism, energy metabolism and blood pressure control. Table \ref{QCAHS} gives a list of the traits and the corresponding clinical pathways.
+The dataset also contains genotypic data on 35 variants within 25 genes listed in Table \ref{genos} along with biological pathways within which they fall. 
+Among the considered genetic variants, 33 are SNPs that were coded according to the additive model. The other two are polymorphisms with more than two alleles.
+ The first, with three alleles, belongs to the gene APOE. It has three alleles and then admits 6 different genotypes. It is coded using 5 indicator variables
+  APOE1-APOE5. The second is a variant from gene PCSK9, also with three alleles but only 4 different genotypes are observed in our dataset. It was coded using 3 indicator variables PCSK9Leu1-PCSK9Leu3.
+
+
+\begin{table}[h]
+\begin{center}
+\caption{Traits of interest in the QCAHS dataset. }\vspace{0.5cm}
+\label{QCAHS}
+\renewcommand{\arraystretch}{1.6}
+\resizebox {1.1\textwidth }{!}{
+\begin{tabular}{|l|l|l|l|}
+\hline
+\multicolumn{1}{|c}{Lipid pathway only}& \multicolumn{1}{|c}{Both Lipid and Energy pathways}  &  \multicolumn{1}{|c}{Energy pathway only}      & \multicolumn{1}{|c|}{Blood pressure (BP) control pathway}  \\
+\hline
+High-density lipoprotein (HDL)& Low-density-lipoprotein (LDL)    &  Fasting glucose   & Systolic blood pressure (SBP)  \\
+                              & Apolipoprotein B (APOB)   &  Fasting insulin   & Diastolic blood pressure (DBP) \\
+                              & Triglycerides (TG)        &                    &                 \\
+\hline
+\end{tabular}}
+\end{center}
+\end{table}
+
+
+
+\begin{table}[h!]
+\begin{center}
+\caption{Candidate genotypes available in QCAHS possibly related to the considered pathways.}\vspace{0.5cm}
+\label{genos}
+\resizebox{\textwidth}{!}{
+%\resizebox {8cm }{10cm}{
+\renewcommand{\arraystretch}{2}
+\begin{tabular}{| c c| c c| c c| c c|}
+\hline
+\multicolumn{2}{|c}{Lipid pathway only}& \multicolumn{2}{|c}{Both Lipid and Energy pathways}& \multicolumn{2}{|c}{Energy pathway only} &\multicolumn{2}{|c|}{Blood pressure control pathway}\\
+\hline
+Gene & Variant & Gene & Variant & Gene & Variant & Gene& Variant\\
+\hline
+
+                  CETP& TaqIB    &  \multirow{2}{*}{PGC}        & G1564A   &  \multirow{2}{*}{TNFa}& G308A      &  \multirow{2}{*}{eNOS} & T-786C            \\
+
+                 ApoC3& C-482T   &                              & G-1302A  &                       & G238A      &                        & Glu298Asp         \\
+
+                 ABCA1&Arg219Lys &                              &          &                       &            &                        &                   \\
+
+                FABP-2& T54A     &  \multirow{4}{*}{Adiponectin}& T45G     &                       &            &                a23-AR  & DelGlu301-303     \\
+
+                 ApoA1& G-75A    &                              & G276T    &                       &            &                 b1-AR  & Gly389Arg         \\
+
+                  APOE&E1E2E3    &                              & -11391   &                       &            &                        &                   \\
+
+                  HL  &C-514T    &                              & -11377   &                       &            &  \multirow{2}{*}{b2-AR}& Gly16Arg          \\
+
+                  LPL & Hind III &                              &          &                       &            &                        & Gln27Glu          \\
+
+                  MTP & G-493T   &                    PPARg2    & Pro12Ala &                       &            &                        &                   \\
+
+                  PON1& A192G    &                              &          &                       &            &                  b3-AR & Trp64Arg          \\
+
+                  PON2& C311G    &                              &          &                       &            &                    ACE & Ins/Del           \\
+
+                      &          &                              &          &                       &            &                    AGT & Met235Thr         \\
+
+                      &          &                              &          &                       &            &                  AGTR1 & A1166C            \\
+
+\multirow{2}{*}{PCSK9}&R46L      &                              &          &                       &            &                        &                   \\
+
+                      &PCSK9Leu  &                              &          &                       &            &   \multirow{3}{*}{LEPR} & Lys656Asn        \\
+
+                      &          &                              &          &                       &            &                         & Gln223Arg        \\
+
+                      &          &                              &          &                       &            &                         &Lys109Arg        \\
+
+\hline
+\end{tabular}
+}
+\end{center}
+\end{table}
+
+\subsection{Analysis of a subset of the data}
+
+ We first focus on a subset of the data: the traits involved in the lipid and/or energy metabolisms and the genes CETP, LPL, PGC and TNFa. 
+ The corresponding path model is illustrated in Figure \ref{part}. It involves 12 observed variables (6 SNPs and 6 traits) and 6 latent variables (4 genes and 2 clinical pathways) 
+
+\vspace{1cm}
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.8]{pathpart.jpg}
+\caption{Path model for the considered variables.}
+\label{part}
+\end{figure}
+ 
+ \clearpage
+We use the function \textbf{GSCA} to estimate the model and/or test the gene-clinical pathway connections as follows. 
+Note that in the dataset QCAHS, the rows correspond to the individuals and the columns to the genotypes first then the traits.
+<<>>= 
+library(ASGSCA)
+data("QCAHS")
+ 
+#Names of all the observed variables: the SNPs then the traits
+colnames(QCAHS)
+
+#Extract the variables of interest
+QCAHS1=data.frame(QCAHS$TaqIB,QCAHS$HindIII,QCAHS$G1302A,QCAHS$G1564A,QCAHS$G308A,QCAHS$G238A,
+QCAHS$HDL,QCAHS$LDL,QCAHS$APOB,QCAHS$TG,QCAHS$Glucose,QCAHS$Insulin)
+
+#Names of the observed variables used in this example
+ObservedVar=c("TaqIB","HindIII","G1302A","G1564A","G308A","G238A","HDL","LDL","APOB",
+"TG","Glucose","Insulin")
+colnames(QCAHS1)=ObservedVar
+
+#Define the vector of the latent variables names
+LatentVar=c("CETP","LPL","PGC","TNFa","Lipid metabolism","Energy metabolism")
+
+#Construction of the matrices W0 and B0 describing the model illustrated in Figure 2.
+W0=matrix(rep(0,12*6),nrow=12,ncol=6, dimnames=list(ObservedVar,LatentVar))
+W0[1,1]=W0[2,2]=W0[3:4,3]=W0[5:6,4]=W0[7:10,5]=W0[8:12,6]=1
+
+B0=matrix(rep(0,6*6),nrow=6,ncol=6, dimnames=list(LatentVar,LatentVar))
+B0[1:3,5]=B0[3:4,6]=1
+
+W0
+B0
+@
+
+The first row of $W_0$ indicates an arrow directed from SNP TaqIB to gene CETP and no connection between this SNP and the other latent variables in the model.
+The first row of B0 indicates an arrow directed from gene CETP to the clinical pathway Lipid metabolism and no connection between this gene and the other latent variables in the model.
+
+If one only wants to estimate the parameters of the model, the argument estim should be set to TRUE while path.test should be set to FALSE. 
+
+<<>>=
+GSCA(QCAHS1,W0, B0,latent.names=LatentVar, estim=TRUE,path.test=FALSE,path=NULL,nperm=1000)
+@
+ 
+The output is a list of two matrices. The first one contains the estimates of the weights of the observed variables in the rows corresponding to the latent variables in the columns. 
+The second matrix contains the estimates of the path coefficients relating the latent variables in the rows to those in the columns. 
+The value $\pm 0.278$ in the Weight output is the estimate of the weight coefficient relating SNP G1302A to gene PGC. The value $\pm 0.210$ in the Path output 
+corresponds to the estimate of the path coefficient between gene CETP and the clinical pathway Lipid metabolism.  The obtained path model estimate is illustrated in Figure \ref{pathpart1}
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.8]{pathpart1.jpg}
+\caption{Path model estimated using GSCA.}
+\label{pathpart1}
+\end{figure}
+ 
+To perform both estimation and test procedures, both arguments estim and path.test should be set to TRUE. 
+The test procedure is based on random sampling of permutations, so we use the R function \textbf{set.seed} to insure 
+the user will obtain the same results displayed here.
+
+<<>>=
+set.seed(2)
+GSCA(QCAHS1,W0, B0,latent.names=LatentVar, estim=TRUE,path.test=TRUE,path=NULL,nperm=1000)
+@
+ 
+ In this case, a  matrix containing the \emph{p-values} for all path coefficients is also given. NA is obtained where no connection is specified in $B_0$. For example, the obtained \emph{p-value}
+  for the path coefficient corresponding to the connection between gene LPL and the Lipid metabolism is equal to $0.004$. This means that, under the studied model, the effect
+   of gene LPL on the Lipid metabolism is significant (say for test level of $5\%$) which means that the effect of the SNP Hind III on the traits HDL, LDL, APOB and TG together is significant.
+The p-value $0.113$ obtained for the connection between gene PGC and the clinical pathway Energy metabolism means that the joint effect of the SNPs G1302A and G1564A on the 
+traits LDL, APOB, TG, Glucose and insulin together is not significant.
+
+Now, if one only needs the results of the test procedure the argument estim sould be set to FALSE.
+
+<<>>=
+set.seed(2)
+GSCA(QCAHS1,W0, B0,latent.names=LatentVar,estim=FALSE,path.test=TRUE,path=NULL,nperm=1000)
+@
+
+It is also possible to perform the test for a subset of path coefficients of interest by assigning to the argument path
+ a matrix of two columns. Each row of this matrix contains the indices of the two latent variables corresponding to an association to be tested.
+  In the following example we test for the significance of the path coefficient relating the gene LPL (latent variable 2) and Lipid metabolism (latent variable 5)
+as well as the one relating the gene PGC (latent variable 3) and Energy metabolism (latent variable 6). 
+
+
+<<>>=
+set.seed(2)
+
+path0=matrix(c(2,3,5,6),ncol=2)
+path0
+GSCA(QCAHS1,W0, B0,latent.names=LatentVar, estim=FALSE,path.test=TRUE,path=path0,
+nperm=1000)
+@
+
+Only p-values for the specified path coeficients are computed, the others are set to NA.
+
+\subsection{Analysis of the complete data}
+
+Now, let's analyse all the available data. The corresponding GSCA model involves in total 49 observed variables (41 genotype variables and 8 phenotypes) and 28 latent variables 
+(25 genes and 3 clinical pathways). Figure \ref{path0} shows a diagram illustrating the path model we want to fit to the data. The corresponding matrices W0 and B0 are included in the package.
+
+
+<<>>= 
+ObservedVar=colnames(QCAHS)
+ObservedVar
+
+#Define the vector of the latent variables names
+LatentVar=c("CETP","APOC3","ABCA1","FABP-2","APOA1","APOE","HL","LPL","MTP","PON1","PON2","PCSK9",
+"PGC","ADIPO","PPARg2","TNFa","eNOS","a23AR","b1AR","b2AR","b3AR","ACE","AGT","AGTR1","LEPR",
+"Lipid metabolism", "Energy metabolism","BP control")
+
+#The matrices W0 and B0 describing the model illustrated in Figure 2.
+data(W0)
+data(B0)
+dim(W0)
+dim(B0)
+@
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.8]{path0.jpg}
+\caption{Path model for the QCAHS data.}
+\label{path0}
+\end{figure}
+
+We use the function GSCA to estimate the parameters of the model and test for the significance of the 
+connections between genes and clinical pathways. For convenience we do not display the returned matrices,
+ however the obtained path model estimate is illustrated in Figure \ref{path} and the significant
+ gene-clinical pathway associations are extracted unsing the code below and reported in Table \ref{Resdata}. 
+
+<<>>=
+set.seed(20)
+Res=GSCA(QCAHS,W0, B0,latent.names=LatentVar, estim=TRUE,path.test=TRUE,path=NULL,nperm=1000)
+
+indices <- which(Res$pvalues<0.05, arr.ind=TRUE)
+ind.row=indices[,1]
+ind.col=indices[,2]
+
+Significant<- data.frame(Gene=rep(0,nrow(indices)),Pathway=rep(0,nrow(indices)),
+pval=rep(-1,nrow(indices)))
+Significant$Gene <- rownames(Res$pvalues)[ind.row]
+Significant$Pathway <- colnames(Res$pvalues)[ind.col]
+Significant$pval<-Res$pvalues[indices]
+
+Significant
+@
+
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.8]{path.jpg}
+\caption{Path model for the QCAHS data estimated with GSCA.}
+\label{path}
+\end{figure}
+
+\begin{table}[h!]
+\caption{Results for QCAHS data analysis. A significant association (at level $5\%$) between a gene and a clinical pathway is indicated by ''X''.} \label{Resdata}
+\vspace{0.5cm}
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|l|c| c| c| }
+\cline{2-4}
+\multicolumn{1}{c|}{ }&\multicolumn{3}{c|}{Clinical pathways}\\
+\hline
+Gene & Lipid & Energy & Blood pressure \\
+\hline
+CETP         &X& & \\
+
+ApoE         &X& & \\
+
+LPL          &X& & \\
+
+PON2         &X& & \\
+
+PCSK9        &X& & \\
+
+PGC          & &X& \\
+
+Adiponectin  & &X& \\
+
+TNFa         & &X& \\
+
+AGT       & & &X\\
+\hline
+ \end{tabular}
+\end{table}
+
+
+
+\clearpage
+\begin{thebibliography}{}
+
+\bibitem[De Leeuw, Young and Takane (1976)]{deLeeuw1976}  de Leeuw, J., Young, F. W., and Takane, Y. (1976). Additive structure in qualitative data: An alternating least squares method with optimal scaling features. \emph{Psychometrika}, 41, 471-503.
+\bibitem[Hwang and Takane (2004)]{Hwang2004}   Hwang, H. and Takane, Y. (2004). Generalized structured component analysis. \emph{Psychometrika}, 69:81-99.
+\bibitem[Paradis et al. (2003)]{Paradis2003} Paradis, G., Lambert, M., O'Loughlin, J., Lavallee, C., Aubin, J., Berthiaume, P., Ledoux, M., Delvin, E., Levy, E., and Hanley, J. (2003). The quebec child and adolescent health and social survey: design and methods of a cardiovascular risk factor survey for youth. \emph{Can J Cardiol}, 19:523-531.
+ \bibitem[Romdhani et al. (2014)]{Romdhani2014}   Romdhani, H., Hwang, H., Paradis, G., Roy-Gagnon, M.-H. and Labbe, A. (2014). Pathway-based Association Study of Multiple Candidate Genes and Multiple Traits Using Structural Equation
+Models, submitted. 
+\end{thebibliography}
+
+
+ \end{document} 
