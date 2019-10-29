@@ -2,7 +2,7 @@ Package: ASGSCA
 Type: Package
 Title: Association Studies for multiple SNPs and multiple traits using
         Generalized Structured Equation Models
-Version: 1.20.0
+Version: 1.21.0
 Date: 2014-07-30
 Author: Hela Romdhani, Stepan Grinek , Heungsun Hwang and Aurelie
         Labbe.
